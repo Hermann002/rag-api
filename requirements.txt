@@ -1,0 +1,4 @@
+sqlalchemy
+databases
+uvicorn
+fastapi
