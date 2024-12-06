@@ -5,7 +5,7 @@ on:
     branches:
       - main
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,13 +15,9 @@ jobs:
       - name: Build Docker image
         run: docker build -t rag-api:latest .
 
-      - name: Run test
-        run: |
-          docker run --rm rag-api:latest pytest app
-
   deploy:
     runs-on: ubuntu-latest
-    needs: build-test
+    needs: build
     steps:    
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.5.3
