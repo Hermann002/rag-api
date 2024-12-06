@@ -5,24 +5,39 @@ on:
     branches:
       - main
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-20.04.6
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Build Docker image
+        run: docker build -t rag-api:latest .
+  
+  test:
+    runs-on: ubuntu-20.04.6
+    needs: build
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: Run test
+        run: |
+          docker run --rm rag-api:latest /app/pytest
+
+  deploy:
+    runs-on: ubuntu-20.04.6
+    needs: test
+    steps:    
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Build Docker image
-        run: docker build -t rag-api:latest .
-        
+          
       - name: Deploy to VPS
         run: |
           ssh -o StrictHostKeyChecking=no digiplus@13.91.1.165 "
           docker stop rag-api || true &&
           docker rm rag-api || true &&
-          docker run -d --name rag-api -p 8000:8000 fastapi-app:latest"
+          docker run -d --name rag-api -p 8005:8000 rag-api:latest"
