@@ -21,7 +21,7 @@ jobs:
           
       - name: Deploy to VPS
         run: |
-          ssh -o StrictHostKeyChecking=no digiplus@13.91.1.165 "
+          ssh -o PreferredAuthentications=publickey digiplus@13.91.1.165 "
           docker stop rag-api || true &&
           docker rm rag-api || true &&
           docker run -d --name rag-api -p 8005:8000 rag-api:latest"
