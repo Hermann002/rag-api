@@ -18,12 +18,10 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        env:
-          SSH_PASSWORD: ${{ secrets.VPS_PASSWORD}}
           
       - name: Deploy to VPS
         run: |
-          ssh -p "$SSH_PASSWORD" -o StrictHostKeyChecking=no digiplus@13.91.1.165 "
+          ssh -o StrictHostKeyChecking=no digiplus@13.91.1.165 "
           docker stop rag-api || true &&
           docker rm rag-api || true &&
           docker run -d --name rag-api -p 8005:8000 rag-api:latest"
