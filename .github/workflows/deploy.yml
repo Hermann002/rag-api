@@ -1,0 +1,28 @@
+name: Deploy rag-api
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Build Docker image
+        run: docker build -t rag-api:latest .
+        
+      - name: Deploy to VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no digiplus@13.91.1.165 "
+          docker stop rag-api || true &&
+          docker rm rag-api || true &&
+          docker run -d --name rag-api -p 8000:8000 fastapi-app:latest"
