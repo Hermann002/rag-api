@@ -6,7 +6,7 @@ on:
       - main
 jobs:
   build:
-    runs-on: ubuntu-20.04.6
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -16,7 +16,7 @@ jobs:
         run: docker build -t rag-api:latest .
   
   test:
-    runs-on: ubuntu-20.04.6
+    runs-on: ubuntu-latest
     needs: build
     steps:
       - name: checkout code
@@ -27,7 +27,7 @@ jobs:
           docker run --rm rag-api:latest /app/pytest
 
   deploy:
-    runs-on: ubuntu-20.04.6
+    runs-on: ubuntu-latest
     needs: test
     steps:    
       - name: Setup SSH
