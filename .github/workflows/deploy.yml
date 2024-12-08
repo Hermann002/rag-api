@@ -1,27 +1,33 @@
-name: Deploy rag-api
+name: Deploy rag-api to VPS
 
 on:
   push:
     branches:
       - main
-jobs:
-  build-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Build Docker image
-        run: docker build -t rag-api:latest .
- 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          
-      - name: Deploy to VPS
-        run: |
-          ssh -o StrictHostKeyChecking=no digiplus@13.91.1.165 "
-          docker stop rag-api || true &&
-          docker rm rag-api || true &&
-          docker run -d --name rag-api -p 8005:8000 rag-api:latest"
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install SSH Client
+      run: sudo apt-get install -y sshpass
+
+    - name: Copy files to VPS
+      env:
+        SSH_PASS: ${{ secrets.VPS_PASSWORD }}
+      run: |
+        sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no -r ./* root@${{ secrets.VPS_IP }}://home/digiplus/rag-api/
+
+    - name: Run deployment script on VPS
+      env:
+        SSH_PASS: ${{ secrets.VPS_PASSWORD }}
+      run: |
+        sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_IP }} 'bash -s' < ./deploy.sh

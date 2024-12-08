@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  web:
+    restart: always
+    build: .
+    image: abraham-v-1.0
+    command: "sh run.sh"
+    ports:
+      - "8007:8000"
+    env_file:
+      - ".env"
+    volumes:
+      - .:/app
+    
+  
