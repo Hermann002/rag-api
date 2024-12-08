@@ -18,4 +18,4 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentification"])
 
 @app.get("/")
 async def root():
-    return {"message": "welcome to Abraham's api version 1.0 !"}
+    return {"message": "welcome to Abraham's api version 1.1 !"}
