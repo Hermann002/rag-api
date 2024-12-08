@@ -18,4 +18,4 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentification"])
 
 @app.get("/")
 async def root():
-    return {"message": "Bienvenu sur l'api RAG !"}
+    return {"message": "Bienvenu sur Abraham version 1.0 !"}
