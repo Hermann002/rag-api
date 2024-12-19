@@ -13,7 +13,7 @@ async def startup_event():
     init_db()
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentification"])
-# app.include_router(rag.router, prefix="/rag", tags=["RAG"])
+app.include_router(rag.router, prefix="/rag", tags=["RAG"])
 # app.include_router(upload.router, prefix="/upload", tags=["upload"])
 
 @app.get("/")

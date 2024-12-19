@@ -1,34 +1,69 @@
-from app.utils import logger, hash_password, check_password
+from app.utils import logger
+from app.security.security import get_password_hash, get_current_active_user, authenticate_user, create_access_token
 from fastapi.security import APIKeyHeader
+from fastapi.security import OAuth2PasswordRequestForm
+from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.models.user import User
-from app.schemas import UserRegisterSchema
+from app.models.user import User, ApiKey
+from app.schemas import UserRegisterSchema, UserLoginSchema, UserResponse
+from typing import Annotated
+from app.security.models import Token
+from app.config import settings
 
-import uuid
+db = get_db()
 
 router = APIRouter()
 api_key_header = APIKeyHeader(name="Abraham-API-Key")
 
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+
 @router.post("/register")
 def register_user(user: UserRegisterSchema, db: Session = Depends(get_db)):
+    check_username = db.query(User).filter(User.username == user.username).first()
+    if check_username:
+        raise HTTPException(status_code=400, detail="Username already exist !")
+
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email already registered !")
     
-    api_key = f"rag_{uuid.uuid4()}"
-    new_user = User(name=user.name, email=user.email, hashed_password=hash_password(user.password), api_key=api_key)
-    db.add(new_user)
+    new_user = User(username=user.username, email=user.email, hashed_password=get_password_hash(user.password))
+    db.add(new_user) 
     db.commit()
     db.refresh(new_user)
-    return {"api_key": new_user.api_key}
+    return {"user": new_user}
+
+@router.post("/login")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)) -> Token: # headers : Content-Type: application/x-www-form-urlencoded
+    user = authenticate_user(form_data.username, form_data.password, db)
+    print(user)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return Token(access_token=access_token, token_type="bearer")
 
 @router.get("/verify")
 def verify_api_key(api_key_header: str = Security(api_key_header),db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.api_key == api_key_header).first()
+    api_key = db.query(ApiKey).filter(ApiKey.api_key == api_key_header).first()
     print(api_key_header)
-    if not user:
+    if not api_key:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return {"message": "API key is valid"}
+
+# headers = {
+#         "Authorization": f"Bearer {token}"
+#     }
+
+@router.get("/users/me/", response_model=UserResponse)
+async def read_users_me(current_user: Annotated[User, Depends(get_current_active_user)]):
+    return current_user
