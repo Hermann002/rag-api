@@ -7,11 +7,13 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.models.user import User, ApiKey
-from app.schemas import UserRegisterSchema, UserLoginSchema, UserResponse
+from app.models.user import User, ApiKey, OneTimePasscode
+from app.schemas import UserRegisterSchema, UserLoginSchema, UserResponse, OTPSchema
 from typing import Annotated
 from app.security.models import Token
 from app.config import settings
+from app.utils import send_code_email, send_normal_mail
+from app.security.security import get_current_user
 
 db = get_db()
 
@@ -20,8 +22,8 @@ api_key_header = APIKeyHeader(name="Abraham-API-Key")
 
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-@router.post("/register")
-def register_user(user: UserRegisterSchema, db: Session = Depends(get_db)):
+@router.post("/register", response_model=UserResponse)
+async def register_user(user: UserRegisterSchema, db: Session = Depends(get_db)):
     check_username = db.query(User).filter(User.username == user.username).first()
     if check_username:
         raise HTTPException(status_code=400, detail="Username already exist !")
@@ -33,8 +35,9 @@ def register_user(user: UserRegisterSchema, db: Session = Depends(get_db)):
     new_user = User(username=user.username, email=user.email, hashed_password=get_password_hash(user.password))
     db.add(new_user) 
     db.commit()
-    db.refresh(new_user)
-    return {"user": new_user}
+
+    await send_code_email(user.email, db)
+    return new_user
 
 @router.post("/login")
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)) -> Token: # headers : Content-Type: application/x-www-form-urlencoded
@@ -52,13 +55,24 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: 
     )
     return Token(access_token=access_token, token_type="bearer")
 
-@router.get("/verify")
-def verify_api_key(api_key_header: str = Security(api_key_header),db: Session = Depends(get_db)):
-    api_key = db.query(ApiKey).filter(ApiKey.api_key == api_key_header).first()
-    print(api_key_header)
-    if not api_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    return {"message": "API key is valid"}
+# @router.get("/verify")
+# def verify_user(api_key_header: str = Security(api_key_header),db: Session = Depends(get_db)):
+#     api_key = db.query(ApiKey).filter(ApiKey.api_key == api_key_header).first()
+#     print(api_key_header)
+#     if not api_key:
+#         raise HTTPException(status_code=401, detail="Invalid API key")
+#     return {"message": "API key is valid"}
+
+@router.post("/verify-user", response_model=UserResponse)
+def verify_user(otp: OTPSchema, db: Session=Depends(get_db)):
+    verify_otp = db.query(OneTimePasscode).filter(OneTimePasscode.code == otp.otp).first()
+    if verify_otp:
+        user = verify_otp.owner
+        user.is_active = True
+        db.commit()
+    else:
+        raise HTTPException(status_code=404, detail="Not found !")
+    return user
 
 # headers = {
 #         "Authorization": f"Bearer {token}"
