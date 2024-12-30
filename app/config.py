@@ -9,10 +9,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str = config("SECRET_KEY")
     ALGORITHM: str = config("ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    sender_email = config("sender_email", cast=str)
-    password = config("password", cast=str)
-    smtp_server = config("smtp_server", cast=str)
-    server_port = config("server_port", cast=int)
+    sender_email: str = config("sender_email", cast=str)
+    password: str = config("password", cast=str)
+    smtp_server: str = config("smtp_server", cast=str)
+    server_port: str = config("server_port", cast=int)
 
     class Config:
         env_file = ".env"
