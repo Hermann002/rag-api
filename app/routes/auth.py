@@ -35,8 +35,6 @@ async def register_user(user: UserRegisterSchema, db: Session = Depends(get_db))
     new_user = User(username=user.username, email=user.email, hashed_password=get_password_hash(user.password))
     db.add(new_user) 
     db.commit()
-
-    await send_code_email(user.email, db)
     return new_user
 
 @router.post("/login")

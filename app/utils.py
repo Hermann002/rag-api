@@ -7,12 +7,8 @@ from app.config import settings
 
 from pydantic import BaseModel, EmailStr
 from starlette.responses import JSONResponse
-from app.db import get_db
 from sqlalchemy.orm import Session
-from decouple import config
 
-
-from pydantic import BaseModel
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -40,20 +36,50 @@ class EmailBody(BaseModel):
 class EmailSchema(BaseModel):
     email: List[EmailStr]
 
-html = """
-<p>Thanks for using Fastapi-mail</p> 
-"""
 
-async def send_normal_mail(email: EmailSchema) -> JSONResponse:
-    pass
+async def send_normal_mail(email: EmailSchema, subject: str, email_body: str) -> JSONResponse:
+    """
+    Author: hermannnzeudeu@gmail.com
+    Description: send normal mail
+    """
+    if isinstance(email, str):
+        email_str = email
+    else:
+        email_str = email.email
+    current_site = "Abraham.app"
 
-def generateOtp(): # or we can use the library pyotp
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = email_str
+    message["Subject"] = subject
+
+    message.attach(MIMEText(email_body, "html"))
+    try:
+        with smtplib.SMTP(smtp_server, server_port) as server:
+            server.starttls()
+            server.login(sender_email, password)
+            server.sendmail(sender_email, email_str, message.as_string())
+            print("Email envoyé avec succès!")
+        return JSONResponse(status_code=200, content={"message": "email has been sent"})
+    except Exception as e:
+        print(f"Une erreur est survenue : {e}")
+        return JSONResponse(status_code=500, content={"message": "Internal server Error"})
+
+def generateOtp(): 
+    """
+    Author: hermannnzeudeu@gmail.com
+    Description: generate otp code for verification
+    """
     otp = ""
     for i in range(8):
         otp += str(random.randint(1,9))
     return otp
 
-async def send_code_email(email: EmailSchema, db: Session):
+async def send_code_email(email: EmailSchema, db: Session) -> JSONResponse:
+    """
+    Author: hermannnzeudeu@gmail.com
+    Description: send otp code to user
+    """
     if isinstance(email, str):
         email_str = email
     else:
@@ -73,11 +99,10 @@ async def send_code_email(email: EmailSchema, db: Session):
     message["To"] = email_str
     message["Subject"] = subject
 
-    # Ajouter le corps de l'email
     message.attach(MIMEText(email_body, "html"))
     try:
         with smtplib.SMTP(smtp_server, server_port) as server:
-            server.starttls()  # Sécuriser la connexion
+            server.starttls()
             server.login(sender_email, password)
             server.sendmail(sender_email, email_str, message.as_string())
             print("Email envoyé avec succès!")

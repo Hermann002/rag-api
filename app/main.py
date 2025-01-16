@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.routes import auth, rag, upload
 from app.db import init_db
+from decouple import config
 
 app = FastAPI(
     title="RAG API",
@@ -18,4 +19,6 @@ app.include_router(rag.router, prefix="/rag", tags=["RAG"])
 
 @app.get("/")
 async def root():
-    return {"message": "welcome to Abraham's api version 1.1 !"}
+    return {
+        "message": "welcome to Abraham's api version 1.1 !",
+        }

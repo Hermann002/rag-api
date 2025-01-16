@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from decouple import config
 
@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     smtp_server: str = config("smtp_server", cast=str)
     server_port: str = config("server_port", cast=int)
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8')
 
 settings = Settings()
