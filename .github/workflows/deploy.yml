@@ -3,31 +3,39 @@ name: Deploy rag-api to VPS
 on:
   push:
     branches:
-      - main
-
-concurrency:
-  group: ${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+      - develop
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Install SSH Client
-      run: sudo apt-get install -y sshpass
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_IP_ADRESS }}
+          username: ${{ secrets.HOST_NAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.VM_DEPLOY_PATH }}
 
-    - name: Copy files to VPS
-      env:
-        SSH_PASS: ${{ secrets.VPS_PASSWORD }}
-      run: |
-        sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no -r ./* ${{ secrets.HOST_NAME }}@${{ secrets.VPS_IP_ADRESS }}:/home/simplex/repo/rag-api/
+            echo "Setting up Git credentials..."
+            git config --global credential.helper store
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git config --global user.name "GitHub Actions"
 
-    - name: Run deployment script on VPS
-      env:
-        SSH_PASS: ${{ secrets.VPS_PASSWORD }}
-      run: |
-        sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no ${{ secrets.HOST_NAME }}@${{ secrets.VPS_IP_ADRESS }} 'bash -s' < ./deploy.sh
+            echo "Updating project with git pull..."
+            git pull https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}@github.com/${{ github.repository }}.git develop
+
+            echo "run docker compose file..."
+            docker-compose down
+            docker-compose up -d
+
+            echo "Deployment completed successfully!"king=no ${{ secrets.HOST_NAME }}@${{ secrets.VPS_IP_ADRESS }} 'bash -s' < ./deploy.sh
