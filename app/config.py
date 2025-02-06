@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     database_url: str = config("DATABASE_URL")
     SECRET_KEY: str = config("SECRET_KEY")
     ALGORITHM: str = config("ALGORITHM")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60*24
     sender_email: str = config("sender_email", cast=str)
     password: str = config("password", cast=str)
     smtp_server: str = config("smtp_server", cast=str)

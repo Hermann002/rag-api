@@ -38,4 +38,4 @@ jobs:
             docker-compose down
             docker-compose up -d
 
-            echo "Deployment completed successfully!"king=no ${{ secrets.HOST_NAME }}@${{ secrets.VPS_IP_ADRESS }} 'bash -s' < ./deploy.sh
+            echo "Deployment completed successfully!"

@@ -34,37 +34,45 @@ class EmailBody(BaseModel):
     message: str
 
 class EmailSchema(BaseModel):
-    email: List[EmailStr]
+    email: EmailStr
 
 
-async def send_normal_mail(email: EmailSchema, subject: str, email_body: str) -> JSONResponse:
+def send_normal_mail(email: EmailSchema, subject: str, email_body: str) -> JSONResponse:
     """
     Author: hermannnzeudeu@gmail.com
     Description: send normal mail
     """
-    if isinstance(email, str):
-        email_str = email
-    else:
-        email_str = email.email
-    current_site = "Abraham.app"
 
+    # Configurer les paramètres de l'email
+    receiver_email = email
+
+    # Créer le message
+    subject = "Sujet de l'email"
+    body = email_body
+
+    # Construire l'email
     message = MIMEMultipart()
     message["From"] = sender_email
-    message["To"] = email_str
+    message["To"] = receiver_email
     message["Subject"] = subject
 
-    message.attach(MIMEText(email_body, "html"))
-    try:
-        with smtplib.SMTP(smtp_server, server_port) as server:
-            server.starttls()
-            server.login(sender_email, password)
-            server.sendmail(sender_email, email_str, message.as_string())
-            print("Email envoyé avec succès!")
-        return JSONResponse(status_code=200, content={"message": "email has been sent"})
-    except Exception as e:
-        print(f"Une erreur est survenue : {e}")
-        return JSONResponse(status_code=500, content={"message": "Internal server Error"})
+    # Ajouter le corps de l'email
+    message.attach(MIMEText(body, "html"))
 
+    # Envoyer l'email
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()  # Sécuriser la connexion
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message.as_string())
+            print("Email envoyé avec succès!")
+    except Exception as e:
+        print(sender_email)
+        print(password == "fogu mmfp ybcx znbp")
+        print(password)
+        print(f"Une erreur est survenue : {e}")
+
+    
 def generateOtp(): 
     """
     Author: hermannnzeudeu@gmail.com
@@ -80,10 +88,7 @@ async def send_code_email(email: EmailSchema, db: Session) -> JSONResponse:
     Author: hermannnzeudeu@gmail.com
     Description: send otp code to user
     """
-    if isinstance(email, str):
-        email_str = email
-    else:
-        email_str = email.email
+    receiver_email = email
     subject = "one time code password for email verification"
     otp_code = generateOtp()
     user = db.query(User).filter(User.email == email).first()
@@ -93,21 +98,10 @@ async def send_code_email(email: EmailSchema, db: Session) -> JSONResponse:
     new_otp = OneTimePasscode(code=otp_code, owner_id=user.id)
     db.add(new_otp)
     db.commit()
-
-    message = MIMEMultipart()
-    message["From"] = sender_email
-    message["To"] = email_str
-    message["Subject"] = subject
-
-    message.attach(MIMEText(email_body, "html"))
     try:
-        with smtplib.SMTP(smtp_server, server_port) as server:
-            server.starttls()
-            server.login(sender_email, password)
-            server.sendmail(sender_email, email_str, message.as_string())
-            print("Email envoyé avec succès!")
-        return JSONResponse(status_code=200, content={"message": "email has been sent"})
+        send_normal_mail(receiver_email, subject, email_body)
+        return JSONResponse(content={"message": "Email sent successfully"})
     except Exception as e:
-        print(f"Une erreur est survenue : {e}")
-        return JSONResponse(status_code=500, content={"message": "Internal server Error"})
+        logger.error(f"Error sending email: {e}")
+        return JSONResponse(content={"message": "Error sending email"}, status_code=500) 
      
