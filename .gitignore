@@ -3,3 +3,6 @@ venv/
 test.db
 __pycache__/
 .pytest_caches
+uploads/
+env/
+llama_index.ipynb
