@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     sender_email: str = config("SENDER_EMAIL", cast=str)
     password: str = config("PASSWORD", cast=str)
     smtp_server: str = config("SMTP_SERVER", cast=str)
-    server_port: str = config("SERVER_PORT", cast=int)
+    server_port: int = config("SERVER_PORT", cast=int)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8')
 
